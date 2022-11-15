@@ -128,6 +128,16 @@ def main(args):
     model, criterion, postprocessors = build_model(args)
     model.to(device)
 
+    # model.backbone[0].body['layer2'] = Identity() #add
+    # model.backbone[0].body['layer3'] = Identity()
+    # model.backbone[0].body['layer4'] = Identity()
+
+    # Currently added: Freeze the backbone layer 
+    # for name, param in model.named_parameters():
+    #     if 'backbone' in name:
+    #         param.requires_grad = False
+
+
     model_without_ddp = model
     if args.distributed:
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
@@ -182,7 +192,12 @@ def main(args):
                 args.resume, map_location='cpu', check_hash=True)
         else:
             checkpoint = torch.load(args.resume, map_location='cpu')
-        model_without_ddp.load_state_dict(checkpoint['model'])
+
+        del checkpoint["model"]["class_embed.weight"]
+        del checkpoint["model"]["class_embed.bias"]
+        del checkpoint["model"]["query_embed.weight"]
+
+        model_without_ddp.load_state_dict(checkpoint['model'], strict=False)
         if not args.eval and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
             optimizer.load_state_dict(checkpoint['optimizer'])
             lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
