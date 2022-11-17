@@ -52,7 +52,7 @@ def get_args_parser():
                         help="Dropout applied in the transformer")
     parser.add_argument('--nheads', default=8, type=int,
                         help="Number of attention heads inside the transformer's attentions")
-    parser.add_argument('--num_queries', default=10, type=int,
+    parser.add_argument('--num_queries', default=100, type=int,
                         help="Number of query slots")
     parser.add_argument('--pre_norm', action='store_true')
 
@@ -80,9 +80,10 @@ def get_args_parser():
 
     # dataset parameters
     parser.add_argument('--dataset_file', default='coco')
-    parser.add_argument('--data_path', type=str)
+    parser.add_argument('--coco_path', type=str)
     parser.add_argument('--coco_panoptic_path', type=str)
     parser.add_argument('--remove_difficult', action='store_true')
+    parser.add_argument('--reduce_img_target_size', default=False, type=bool)
 
     parser.add_argument('--output_dir', default='',
                         help='path where to save, empty for no saving')
@@ -94,6 +95,7 @@ def get_args_parser():
                         help='start epoch')
     parser.add_argument('--eval', action='store_true')
     parser.add_argument('--num_workers', default=2, type=int)
+
 
     # distributed training parameters
     parser.add_argument('--world_size', default=1, type=int,
@@ -133,10 +135,13 @@ def main(args):
     # model.backbone[0].body['layer4'] = Identity()
 
     # Currently added: Freeze the backbone layer 
-    # for name, param in model.named_parameters():
-    #     if 'backbone' in name:
-    #         param.requires_grad = False
-
+    for name, param in model.named_parameters():
+        if 'backbone' in name:
+            param.requires_grad = False
+        if 'transformer.decoder' in name: 
+            param.requires_grad = False
+    
+    # import ipdb; ipdb.set_trace()
 
     model_without_ddp = model
     if args.distributed:
@@ -193,9 +198,13 @@ def main(args):
         else:
             checkpoint = torch.load(args.resume, map_location='cpu')
 
-        del checkpoint["model"]["class_embed.weight"]
-        del checkpoint["model"]["class_embed.bias"]
-        del checkpoint["model"]["query_embed.weight"]
+        # del checkpoint["model"]["class_embed.weight"]
+        # del checkpoint["model"]["class_embed.bias"]
+        # del checkpoint["model"]["query_embed.weight"]
+
+        del checkpoint["model"]["input_proj.weight"]
+        del checkpoint["model"]["input_proj.bias"]
+
 
         model_without_ddp.load_state_dict(checkpoint['model'], strict=False)
         if not args.eval and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
