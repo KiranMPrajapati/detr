@@ -16,6 +16,8 @@ from datasets import build_dataset, get_coco_api_from_dataset
 from engine import evaluate, train_one_epoch
 from models import build_model
 
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 def get_args_parser():
     parser = argparse.ArgumentParser('Set transformer detector', add_help=False)
@@ -81,6 +83,7 @@ def get_args_parser():
     # dataset parameters
     parser.add_argument('--dataset_file', default='coco')
     parser.add_argument('--coco_path', type=str)
+    parser.add_argument('--data_path', type=str)
     parser.add_argument('--coco_panoptic_path', type=str)
     parser.add_argument('--remove_difficult', action='store_true')
     parser.add_argument('--reduce_img_target_size', default=False, type=bool)
@@ -137,8 +140,6 @@ def main(args):
     # Currently added: Freeze the backbone layer 
     for name, param in model.named_parameters():
         if 'backbone' in name:
-            param.requires_grad = False
-        if 'transformer.decoder' in name: 
             param.requires_grad = False
     
     model_without_ddp = model
@@ -199,6 +200,7 @@ def main(args):
         # del checkpoint["model"]["class_embed.weight"]
         # del checkpoint["model"]["class_embed.bias"]
         # del checkpoint["model"]["query_embed.weight"]
+        import ipdb; ipdb.set_trace()
 
         del checkpoint["model"]["input_proj.weight"]
         del checkpoint["model"]["input_proj.bias"]
