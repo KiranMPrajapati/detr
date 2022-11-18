@@ -199,7 +199,6 @@ def main(args):
 
         del checkpoint["model"]["class_embed.weight"]
         del checkpoint["model"]["class_embed.bias"]
-        del checkpoint["model"]["query_embed.weight"]
 
         del checkpoint["model"]["input_proj.weight"]
         del checkpoint["model"]["input_proj.bias"]
