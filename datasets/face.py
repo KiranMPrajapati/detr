@@ -119,17 +119,18 @@ def make_Face_transforms(image_set):
         T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    scales = [480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800]
+    
+    scales = [240, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400]
 
     if image_set == 'train':
         return T.Compose([
             T.RandomHorizontalFlip(),
             T.RandomSelect(
-                T.RandomResize(scales, max_size=1333),
+                T.RandomResize(scales, max_size=666),
                 T.Compose([
-                    T.RandomResize([400, 500, 600]),
-                    T.RandomSizeCrop(384, 600),
-                    T.RandomResize(scales, max_size=1333),
+                    T.RandomResize([200, 250, 300]),
+                    T.RandomSizeCrop(192, 300),
+                    T.RandomResize(scales, max_size=666),
                 ])
             ),
             normalize,
@@ -137,7 +138,7 @@ def make_Face_transforms(image_set):
 
     if image_set == 'val':
         return T.Compose([
-            T.RandomResize([800], max_size=1333),
+            T.RandomResize([400], max_size=666),
             normalize,
         ])
 

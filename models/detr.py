@@ -62,7 +62,6 @@ class DETR(nn.Module):
 
         src, mask = features[-1].decompose()
         assert mask is not None
-        # import ipdb; ipdb.set_trace()
         # hs = self.transformer(self.input_proj(src), mask, self.query_embed.weight, pos[-1])[0]
         hs = self.transformer(src, mask, self.query_embed.weight, pos[-1])[0]
 

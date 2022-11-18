@@ -15,18 +15,16 @@ import datasets.transforms as T
 
 
 class CocoDetection(torchvision.datasets.CocoDetection):
-    def __init__(self, img_folder, ann_file, transforms, return_masks, reduce_img_target_size):
+    def __init__(self, img_folder, ann_file, transforms, return_masks):
         super(CocoDetection, self).__init__(img_folder, ann_file)
         self._transforms = transforms
-        self.prepare = ConvertCocoPolysToMask(return_masks, reduce_img_target_size)
+        self.prepare = ConvertCocoPolysToMask(return_masks)
 
     def __getitem__(self, idx):
         img, target = super(CocoDetection, self).__getitem__(idx)
         image_id = self.ids[idx]
         target = {'image_id': image_id, 'annotations': target}
-        print('before', img.size)
         img, target = self.prepare(img, target)
-        print('after', img.size)
 
         if self._transforms is not None:
             img, target = self._transforms(img, target)
@@ -51,21 +49,12 @@ def convert_coco_poly_to_mask(segmentations, height, width):
 
 
 class ConvertCocoPolysToMask(object):
-    def __init__(self, return_masks=False, reduce_img_target_size=False):
+    def __init__(self, return_masks=False, ):
         self.return_masks = return_masks
-        self.reduce_img_target_size = reduce_img_target_size 
 
     def __call__(self, image, target):
         w, h = image.size
 
-        if self.reduce_img_target_size: 
-            image = image.resize((int(w/2), int(h/2)))
-
-            for index, each_annotation in enumerate(target["annotations"]): 
-                target["annotations"][index]["segmentation"][0] = [segment * 0.5 for segment in target["annotations"][index]["segmentation"][0]]
-                target["annotations"][index]["bbox"] = [bbox * 0.5 for bbox in target["annotations"][index]["bbox"]]
-
-                        
         image_id = target["image_id"]
         image_id = torch.tensor([image_id])
 
@@ -130,17 +119,40 @@ def make_coco_transforms(image_set):
         T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    scales = [480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800]
+    # scales = [480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800]
+
+    # if image_set == 'train':
+    #     return T.Compose([
+    #         T.RandomHorizontalFlip(),
+    #         T.RandomSelect(
+    #             T.RandomResize(scales, max_size=1333),
+    #             T.Compose([
+    #                 T.RandomResize([400, 500, 600]),
+    #                 T.RandomSizeCrop(384, 600),
+    #                 T.RandomResize(scales, max_size=1333),
+    #             ])
+    #         ),
+    #         normalize,
+    #     ])
+
+    # if image_set == 'val':
+    #     return T.Compose([
+    #         T.RandomResize([800], max_size=1333),
+    #         normalize,
+    #     ])
+
+    # scales = [60, 100, 120, 125]
+    scales = [240, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400]
 
     if image_set == 'train':
         return T.Compose([
             T.RandomHorizontalFlip(),
             T.RandomSelect(
-                T.RandomResize(scales, max_size=1333),
+                T.RandomResize(scales, max_size=666),
                 T.Compose([
-                    T.RandomResize([400, 500, 600]),
-                    T.RandomSizeCrop(384, 600),
-                    T.RandomResize(scales, max_size=1333),
+                    T.RandomResize([200, 250, 300]),
+                    T.RandomSizeCrop(192, 300),
+                    T.RandomResize(scales, max_size=666),
                 ])
             ),
             normalize,
@@ -148,7 +160,7 @@ def make_coco_transforms(image_set):
 
     if image_set == 'val':
         return T.Compose([
-            T.RandomResize([800], max_size=1333),
+            T.RandomResize([400], max_size=666),
             normalize,
         ])
 
@@ -165,5 +177,5 @@ def build(image_set, args):
     }
 
     img_folder, ann_file = PATHS[image_set]
-    dataset = CocoDetection(img_folder, ann_file, transforms=make_coco_transforms(image_set), return_masks=args.masks, reduce_img_target_size=args.reduce_img_target_size)
+    dataset = CocoDetection(img_folder, ann_file, transforms=make_coco_transforms(image_set), return_masks=args.masks)
     return dataset

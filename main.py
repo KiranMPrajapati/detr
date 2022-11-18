@@ -141,8 +141,6 @@ def main(args):
         if 'transformer.decoder' in name: 
             param.requires_grad = False
     
-    # import ipdb; ipdb.set_trace()
-
     model_without_ddp = model
     if args.distributed:
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
